@@ -125,7 +125,7 @@ async function processVerification(taskId, ipfsHash, contract) {
         const callOllama = async () => {
             try {
                 const res = await axios.post('http://127.0.0.1:11434/api/generate', {
-                    model: "llava",
+                    model: "llava:7b",
                     prompt: prompt,
                     images: [imageBuffer.toString('base64')],
                     stream: false
@@ -133,7 +133,7 @@ async function processVerification(taskId, ipfsHash, contract) {
                 return res.data.response.trim().toUpperCase();
             } catch (e) {
                 if (e.code === 'ECONNREFUSED') {
-                    throw new Error("Ollama is not running! Run 'ollama run llava' in terminal.");
+                    throw new Error("Ollama is not running! Run 'ollama run llava:7b' in terminal.");
                 }
                 throw e;
             }
