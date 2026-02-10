@@ -1,0 +1,13 @@
+{
+  "name": "satya-ai-node",
+  "version": "1.0.0",
+  "description": "AI Oracle for Satya Protocol",
+  "main": "aiVerifier.js",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/generative-ai": "^0.2.1",
+    "axios": "^1.13.5",
+    "dotenv": "^16.4.1",
+    "ethers": "^6.11.1"
+  }
+}
