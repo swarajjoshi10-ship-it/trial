@@ -63,39 +63,15 @@ function App() {
     return <LandingPage onLogin={handleLogin} />;
   }
 
-  // 4. MAIN DASHBOARD LAYOUT (Simplified)
+  // 4. MAIN DASHBOARD (Clean spec, let global CSS handle background)
   return (
-    <div style={{ background: '#f9fafb', minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
-
-      {/* Simple Top Navigation */}
-      <nav style={{ background: 'white', padding: '15px 40px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '20px' }}>🔗</span>
-          <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#111827' }}>SatyaProtocol</span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <span style={{ fontSize: '14px', color: '#6b7280' }}>
-            Role: <strong style={{ color: userRole === 'ngo' ? '#7c3aed' : '#059669' }}>{userRole === 'ngo' ? 'NGO / Creator' : 'Donor'}</strong>
-          </span>
-
-          <div style={{ background: '#f3f4f6', padding: '8px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: '500' }}>
-            🟢 {account.substring(0, 6)}...{account.substring(38)}
-          </div>
-
-          <button onClick={disconnect} style={{ border: '1px solid #e5e7eb', background: 'white', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
-            Logout
-          </button>
-        </div>
-      </nav>
-
-      {/* Main Content Area - Centered */}
-      <div style={{ maxWidth: '1000px', margin: '40px auto', padding: '0 20px' }}>
-        <DeFiDashboard account={account} userRole={userRole} />
-      </div>
-
-    </div>
+    <ActiveDashboardWrapper account={account} userRole={userRole} onLogout={disconnect} />
   );
 }
+
+// Helper to keep code clean
+const ActiveDashboardWrapper = ({ account, userRole, onLogout }) => {
+  return <DeFiDashboard account={account} userRole={userRole} onLogout={onLogout} />;
+};
 
 export default App;

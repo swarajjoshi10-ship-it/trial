@@ -5,7 +5,7 @@ const path = require('path');
 const axios = require('axios');
 
 // Configuration
-const RPC_URL = process.env.RPC_URL || "https://rpc-mumbai.maticvigil.com";
+const RPC_URL = process.env.RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com";
 const PRIVATE_KEY = process.env.PRIVATE_KEY; // MUST be the owner/AI verifier key
 const CONTRACT_ADDRESS = "0x26F189a0daA025A7b9966F05c72315eE8944b972"; // Replace if redeployed
 
@@ -105,30 +105,44 @@ async function processVerification(taskId, ipfsHash, contract) {
 
         if (!imageBuffer) throw new Error("Could not download image from any IPFS gateway.");
 
-        // 2. Ask Gemini
-        const { GoogleGenerativeAI } = require("@google/generative-ai");
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // 2. Ask Local Ollama (Model: llava)
+        console.log(`🦙 Sending to local Ollama (llava)...`);
 
         const prompt = `
-        You are an AI Auditor for a charity. 
+        You are a strict AI Auditor for a charity. Your job is to verify proof of work.
         Task Description: "${task.description}"
         
-        Does this image show proof of the task description? 
-        If the image is completely black, blurry, irrelevant, or does not match, say NO.
-        If the image matches the description reasonably well, say YES.
+        STRICT RULES:
+        1. If I send you a black image, dark image, or random noise -> Reply "NO".
+        2. If the image clearly shows the task being done -> Reply "YES".
+        3. Do not hallucinate.
         
+        Check the image provided. Does it match the description?
         Reply ONLY with "YES" or "NO".
         `;
 
-        const result = await model.generateContent([
-            prompt,
-            { inlineData: { data: imageBuffer.toString("base64"), mimeType: "image/jpeg" } }
-        ]);
+        // Function to call Ollama
+        const callOllama = async () => {
+            try {
+                const res = await axios.post('http://127.0.0.1:11434/api/generate', {
+                    model: "llava",
+                    prompt: prompt,
+                    images: [imageBuffer.toString('base64')],
+                    stream: false
+                });
+                return res.data.response.trim().toUpperCase();
+            } catch (e) {
+                if (e.code === 'ECONNREFUSED') {
+                    throw new Error("Ollama is not running! Run 'ollama run llava' in terminal.");
+                }
+                throw e;
+            }
+        };
 
-        const responseText = result.response.text().trim().toUpperCase();
-        console.log(`🤖 Gemini Response: "${responseText}"`);
+        const responseText = await callOllama();
+        console.log(`🦙 Ollama Response: "${responseText}"`);
 
+        // Check for YES (Llava can sometimes be chatty, so we check inclusion)
         const isValid = responseText.includes("YES");
 
         console.log(`🤔 AI Verdict: ${isValid ? "MATCH VERIFIED ✅" : "REJECTED (Poor Quality/Mismatch) ❌"}`);
@@ -147,7 +161,8 @@ async function processVerification(taskId, ipfsHash, contract) {
         }
 
     } catch (error) {
-        console.error(`❌ Verification Logic Error:`, error.message);
+        console.error(`❌ AI/System Processing Error:`, error.message);
+        console.log(`⚠️ Task remains PENDING (Funds Safe). NGO can retry upload.`);
     }
 }
 
